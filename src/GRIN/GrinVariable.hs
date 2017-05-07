@@ -8,9 +8,10 @@ GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric,
 module GRIN.GrinVariable where
 import Data.Data
 import Control.Lens.TH
-
+import Control.Lens.Plated
 data GrinVariable ty where
   Var :: {_v ::ty} -> GrinVariable ty
+  Hole :: GrinVariable ty
   deriving Data
 deriving instance Eq ty => Eq (GrinVariable ty)
 
@@ -26,5 +27,7 @@ instance Monad GrinVariable where
 
 deriving instance Foldable GrinVariable
 deriving instance Traversable GrinVariable
+
+instance Data ty => Plated (GrinVariable ty) where
 
 makeClassyFor "HasVariable" "variable" [("_v","rawVariable")]''GrinVariable 

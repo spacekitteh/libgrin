@@ -12,7 +12,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
-
+{-# LANGUAGE DeriveAnyClass #-}
 module GRIN.GrinSimpleValue where
 
 import Data.Type.Equality
@@ -20,7 +20,8 @@ import Data.Kind
 import GRIN.GrinLiteral
 import GRIN.GrinVariable
 import Data.Data
-import GHC.Generics
+import Control.Lens.Plated
+
 data LiteralValue = LV deriving (Eq, Data, Typeable)
 
 data GrinSimpleValue a where
@@ -31,7 +32,7 @@ deriving instance (Data a, Typeable a) => Data (GrinSimpleValue a)
 
 deriving instance Eq a => Eq (GrinSimpleValue a)
 
-
+deriving instance Data a => Plated (GrinSimpleValue a)
 
 
 instance Functor GrinSimpleValue where

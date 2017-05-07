@@ -1,11 +1,13 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module GRIN.GrinIdentifiers where
-type Name = String
-type ModuleName = Name
-type GlobalName = Name
-type NodeName = Name
-type ArgumentName = VariableName
-type VariableName = Name
-type VariableNames = [VariableName]
-type ArgumentNames = [ArgumentName]
-type ConstructorName = NodeName
-type FunctionName = Name
+
+import Data.Text
+import Data.Data
+data GrinIdentifier = FunctionName Text
+                    | ConstructorName Text
+                    | ArgumentName Text
+                    | NodeName Text
+                    | ModuleName Text
+                    | VariableName Text
+                    | GlobalName Text
+                    deriving (Eq, Data, Typeable)

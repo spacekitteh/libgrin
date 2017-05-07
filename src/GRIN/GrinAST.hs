@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds, EmptyDataDecls,  TypeInType, TypeOperators, ExistentialQuantification, RankNTypes, DefaultSignatures,
-GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving #-}
+GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving, DeriveAnyClass #-}
 module GrinAST where
 
 import qualified Data.Map.Strict as Map
@@ -9,7 +9,7 @@ import Data.Text
 import GHC.TypeLits
 import GHC.Generics
 import Data.Data
-import Language.Haskell.TH.Syntax (Lift)
+
 import Control.Lens.Plated
 import GRIN.GrinIdentifiers
 import GRIN.GrinLiteral
@@ -51,16 +51,15 @@ data GrinExpr f a where
   Case :: {value :: Val f a, alternatives :: Alternatives f a} -> Expr f a
   SimpleExpr :: SExpr f a -> Expr f a
   Fix :: {bnd :: Expr f a} -> Expr f a
-
   deriving  Typeable
 
 
-instance (Typeable f, Traversable f, Typeable a, Data a, Data (f a), Data (f (GrinValue f a))) => Plated (GrinExpr f a) where
+deriving instance (Data (f a), ValueConstraint f a)  => Plated (GrinExpr f a) 
   
 deriving instance Functor (GrinExpr f)
 deriving instance Foldable (GrinExpr f)
 deriving instance Traversable (GrinExpr f)
-deriving instance (Typeable f, Traversable f, Typeable a, Data a, Data (f a), Data (f (GrinValue f a))) => Data (GrinExpr f a)
+deriving instance (ValueConstraint f a, Data (f a))  => Data (GrinExpr f a)
 
 
 instance Traversable f => Applicative (GrinExpr f) where
@@ -85,14 +84,13 @@ data GrinSimpleExpr f a where
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
   Eval :: {name :: Name} -> SExpr f a
   App :: {name :: VariableName, args :: Arguments} -> SExpr f a
-{-  Throw {name :: Name, args :: Arguments} :: Expr
-  Catch { body :: Expr, arg :: Name, handler :: Expr} :: Expr  -}
+
 
   deriving  (  Typeable)
 deriving instance Functor (GrinSimpleExpr f)
 deriving instance Foldable (GrinSimpleExpr f)
 deriving instance Traversable (GrinSimpleExpr f)
-deriving instance (Typeable f, Traversable f, Typeable a, Data a, Data (f a), Data (f (GrinValue f a))) => Data (GrinSimpleExpr f a)
+deriving instance ValueConstraint f a => Data (GrinSimpleExpr f a)
 
 instance Traversable f => Applicative (GrinSimpleExpr f) where
   pure a = Unit (Variable a)
@@ -105,9 +103,8 @@ type CPat = GrinConstantPattern
 
 data GrinLambdaPattern f a where
   ValuePattern :: Val f a -> LPat f a
-  --todo: add ignore pattern
   deriving (Functor, Foldable, Traversable, Typeable)
-deriving instance (Typeable f, Traversable f, Typeable a, Data a, Data (f a), Data (f (GrinValue f a))) => Data (GrinLambdaPattern f a)
+deriving instance ValueConstraint f a  => Data (GrinLambdaPattern f a)
 pattern EmptyPattern = ValuePattern (EmptyValue)
 pattern VariablePattern name = ValuePattern (SimpleValue (VarValue name))
 pattern PlainTagPattern tag = ValuePattern(PlainTag tag)
@@ -126,7 +123,7 @@ data GrinAlternative f a where
 deriving instance Functor (GrinAlternative f)
 deriving instance Foldable (GrinAlternative f)
 deriving instance Traversable (GrinAlternative f)
-deriving instance (Typeable f, Traversable f, Typeable a, Data a, Data (f a), Data (f (GrinValue f a))) => Data (GrinAlternative f a)
+deriving instance (ValueConstraint f a, Data (f a)) => Data (GrinAlternative f a)
 deriving instance Typeable (GrinAlternative)
 
   
