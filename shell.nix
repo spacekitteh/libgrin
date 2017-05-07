@@ -7,7 +7,7 @@ let
  lens
  megaparsec
  hoopl
- 
+ constraints
  QuickCheck
  ansi-wl-pprint 
  criterion
