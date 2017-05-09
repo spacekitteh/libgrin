@@ -13,14 +13,14 @@ import Control.Lens.TH
 import Data.Coerce
 type Tag = GrinTag 
 
-newtype Arity = Arity {arityVal :: Integer} deriving (Eq, Num, Data, Typeable)
+newtype Arity = Arity {arityVal :: Integer} deriving (Eq, Num, Data, Typeable, Show)
 
 instance Monoid Arity where
   mempty = Arity 0
   mappend = coerce ((+) :: Integer -> Integer -> Integer)
 
 
-data GrinTagType  = ConstructorTag  | FullyAppliedFunctionApplicationTag | PartialApplicationTag | NoTag deriving (Eq, Data, Typeable, Generic)
+data GrinTagType  = ConstructorTag  | FullyAppliedFunctionApplicationTag | PartialApplicationTag | NoTag deriving (Eq, Data, Typeable, Generic, Show)
 
 pattern EnumTag name = Constructor name 0
 
@@ -31,8 +31,8 @@ data GrinTag  where
   Unboxed :: Tag 
   Hole :: {arity' :: Arity} -> Tag 
   RecTag :: Tag 
-  deriving (Data,  Typeable)
-deriving instance Eq (GrinTag)
+  deriving (Data,  Typeable, Show, Eq)
+--deriving instance Eq (GrinTag)
 
 
 makeClassyFor "HasTag" "tag" [("name'", "tagName"), ("arity'", "arity")] ''GrinTag

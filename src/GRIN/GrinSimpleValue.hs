@@ -22,34 +22,23 @@ import GRIN.GrinVariable
 import Data.Data
 import Control.Lens.Plated
 
-data LiteralValue = LV deriving (Eq, Data, Typeable)
+
+
 
 data GrinSimpleValue a where
   Literal :: {value :: GrinLiteral} -> GrinSimpleValue a
   VarValue ::  GrinVariable a -> GrinSimpleValue a
+  deriving (Show, Eq, Data, Typeable, Functor, Foldable, Traversable)
 
-deriving instance (Data a, Typeable a) => Data (GrinSimpleValue a)
-
-deriving instance Eq a => Eq (GrinSimpleValue a)
 
 deriving instance Data a => Plated (GrinSimpleValue a)
 
 
-instance Functor GrinSimpleValue where
-  fmap f (VarValue a) = VarValue (fmap f a)
-
 instance Applicative GrinSimpleValue where
   pure a = VarValue (pure a)
-  (VarValue f) <*> (VarValue a) = VarValue (f <*> a)
+  (VarValue f) <*>( VarValue a) = VarValue (f <*> a)
 
 instance Monad GrinSimpleValue where
   (VarValue (Var a)) >>= f = (f a)
 
 
-instance Foldable GrinSimpleValue where
-  foldMap f (VarValue a) = foldMap f a
-
-
-
-instance Traversable GrinSimpleValue where
-  traverse f (VarValue a) = VarValue <$> traverse f a

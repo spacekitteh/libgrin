@@ -19,15 +19,18 @@ import GRIN.GrinTag
 import GRIN.GrinSimpleValue
 type Expr = GrinExpr
 type Tags = [Tag]
+type ModuleName = GrinIdentifier
 data GrinModule where
   Module :: {name :: ModuleName, globalVars :: GlobalVars, bindings :: Bindings,
           tagInfo :: Map.Map Name Tags} -> GrinModule
 
 type GlobalVars = forall a f.  [GlobalVar f a]
+type GlobalName = GrinIdentifier
 data GlobalVar f a where
   Global :: {name :: GlobalName, value :: Val f a} -> GlobalVar f a
 
 type Bindings = [Binding]
+type ArgumentNames = [GrinIdentifier]
 data BindingAnnotation
 data Binding where
   Bind :: {name :: Name, bindingAnnotation :: BindingAnnotation, argNames :: ArgumentNames, expr :: forall a f . Expr f a} -> Binding
@@ -38,8 +41,7 @@ data Binding where
 type Alternatives f a = [Alternative f a]
 data Type 
 type FieldOffset = Int
-data Argument = Argument  deriving (Data, Typeable, Eq)
-type Arguments = [Argument]
+
 data CallConvention
 data ForeignEnt
 data FFIAnnotation
@@ -53,13 +55,13 @@ data GrinExpr f a where
   Fix :: {bnd :: Expr f a} -> Expr f a
   deriving  Typeable
 
-
-deriving instance (Data (f a), ValueConstraint f a)  => Plated (GrinExpr f a) 
+deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (GrinExpr f a)
+deriving instance (Data (f a), ValueConstraint f a, Data (f GrinIdentifier))  => Plated (GrinExpr f a) 
   
 deriving instance Functor (GrinExpr f)
 deriving instance Foldable (GrinExpr f)
 deriving instance Traversable (GrinExpr f)
-deriving instance (ValueConstraint f a, Data (f a))  => Data (GrinExpr f a)
+deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier))  => Data (GrinExpr f a)
 
 
 instance Traversable f => Applicative (GrinExpr f) where
@@ -70,6 +72,10 @@ instance Traversable f => Monad (GrinExpr f) where
   (SimpleExpr (Unit (Variable a))) >>= f = f a
   
 type SExpr = GrinSimpleExpr
+type Val = GrinValue
+type Name = GrinIdentifier
+type VariableName = GrinIdentifier
+type FunctionName = GrinIdentifier
 data GrinSimpleExpr f a where
   Alloc :: {size :: Val f a} -> SExpr f a
   Dealloc :: {target :: Val f a} -> SExpr f a
@@ -79,18 +85,19 @@ data GrinSimpleExpr f a where
   FetchUpdate :: {source :: Name, destination :: Name} -> SExpr f a
   FetchField :: {name :: Name, offset :: FieldOffset, tag ::  Maybe Tag } -> SExpr f a
   Store :: {value :: Val f a} -> SExpr f a
-  Call :: {name :: FunctionName, args :: Arguments} -> SExpr f a
+  Call :: {name :: FunctionName, args :: f GrinIdentifier} -> SExpr f a
 {-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
   Eval :: {name :: Name} -> SExpr f a
-  App :: {name :: VariableName, args :: Arguments} -> SExpr f a
+--  App :: {name :: VariableName, args :: f GrinIdentifier} -> SExpr f a
 
 
   deriving  (  Typeable)
+deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (GrinSimpleExpr f a)
 deriving instance Functor (GrinSimpleExpr f)
 deriving instance Foldable (GrinSimpleExpr f)
 deriving instance Traversable (GrinSimpleExpr f)
-deriving instance ValueConstraint f a => Data (GrinSimpleExpr f a)
+deriving instance (ValueConstraint f a, Data (f GrinIdentifier))  => Data (GrinSimpleExpr f a)
 
 instance Traversable f => Applicative (GrinSimpleExpr f) where
   pure a = Unit (Variable a)
@@ -102,14 +109,15 @@ type CPat = GrinConstantPattern
   
 
 data GrinLambdaPattern f a where
-  ValuePattern :: Val f a -> LPat f a
+  ValuePattern :: GrinValue f a -> LPat f a
   deriving (Functor, Foldable, Traversable, Typeable)
+deriving instance (Show a, Show (f (GrinValue f a))) => Show (GrinLambdaPattern f a)
 deriving instance ValueConstraint f a  => Data (GrinLambdaPattern f a)
 pattern EmptyPattern = ValuePattern (EmptyValue)
 pattern VariablePattern name = ValuePattern (SimpleValue (VarValue name))
 pattern PlainTagPattern tag = ValuePattern(PlainTag tag)
-pattern KnownTagNodePattern tag = ValuePattern(NodeValue tag)
-pattern VariableTagNodePattern tag fields = ValuePattern (NodeValue ( Node (KnownTag tag) fields))
+pattern KnownTagNodePattern tag fields = ValuePattern (NodeValue ( Node (KnownTag tag) fields))
+pattern VariableTagNodePattern tagName fields = ValuePattern (NodeValue ( Node (VariableTag tagName) fields))
 
 
 
@@ -119,16 +127,18 @@ pattern VariableTagNodePattern tag fields = ValuePattern (NodeValue ( Node (Know
 type Alternative = GrinAlternative
 data GrinAlternative f a where
   Alternative :: {pat :: CPat , expr :: Expr f a} -> Alternative f a
+deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (Alternative f a)
+
 
 deriving instance Functor (GrinAlternative f)
 deriving instance Foldable (GrinAlternative f)
 deriving instance Traversable (GrinAlternative f)
-deriving instance (ValueConstraint f a, Data (f a)) => Data (GrinAlternative f a)
+deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier)) => Data (GrinAlternative f a)
 deriving instance Typeable (GrinAlternative)
 
   
 data GrinConstantPattern where
   LiteralPattern ::  GrinLiteral  -> CPat 
   TagPattern ::  Tag -> CPat 
-  ConstantNodePattern :: Tag  -> VariableNames -> CPat 
-  deriving (Data, Typeable)
+  ConstantNodePattern :: Tag  -> GrinIdentifier -> CPat 
+  deriving (Data, Typeable, Show)

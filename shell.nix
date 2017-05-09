@@ -3,7 +3,13 @@ let
   inherit (nixpkgs) pkgs;
   ghc = pkgs.haskell.packages.${compiler}.ghcWithHoogle (ps: with ps; 
 [ ghc-mod
- mtl
+ hspec
+ hspec-megaparsec
+ hspec-laws
+ hspec-expectations-lens
+ hspec-checkers
+ hspec-smallcheck
+ 
  lens
  megaparsec
  hoopl
@@ -40,6 +46,10 @@ let
  optparse-applicative
  configurator 
  data-category
+ llvm-hs
+# llvm-hs-typed
+# llvm-hs-pretty
+
  megaparsec
  idris
  structured-haskell-mode

@@ -10,4 +10,4 @@ data GrinIdentifier = FunctionName Text
                     | ModuleName Text
                     | VariableName Text
                     | GlobalName Text
-                    deriving (Eq, Data, Typeable)
+                    deriving (Eq, Data, Typeable, Show)

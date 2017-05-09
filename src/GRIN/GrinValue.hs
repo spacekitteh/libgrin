@@ -11,7 +11,6 @@ GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric,
 
 module GRIN.GrinValue where
 
-import Data.Text
 import Data.Kind
 import GRIN.GrinTag
 import Data.Data
@@ -23,16 +22,13 @@ import Data.Data.Lens (uniplate)
 import Control.Lens
 import Control.Lens.Combinators
 
-import Control.Lens.TH as CLTH
 
+import Control.Applicative 
 data Boxing
 
-data Pointer ty deriving (Functor, Foldable, Traversable, Typeable)
+data Pointer ty = P deriving (Functor, Foldable, Traversable, Typeable, Show)
 deriving instance Eq (Pointer ty)
 deriving instance (Data ty, Typeable ty) => Data (Pointer ty)
-data BasicValue ty deriving (Functor, Foldable, Traversable,  Typeable)
-deriving instance Eq (BasicValue ty)
-deriving instance (Data ty, Typeable ty) => Data (BasicValue ty)
 
 
 
@@ -41,20 +37,29 @@ deriving instance (Data ty, Typeable ty) => Data (BasicValue ty)
 
 data NodeType a where
   KnownTag :: {_knownTag :: GrinTag} -> NodeType a
+  Tagless :: NodeType a
   VariableTag :: GrinVariable a -> NodeType a
-  deriving ( Eq, Functor, Foldable, Traversable,  Typeable)
+  deriving ( Eq, Functor, Foldable, Traversable,  Typeable, Show)
 deriving instance (Data a, Typeable a) => Data (NodeType a)
-makeLenses  ''NodeType
-makeClassyPrisms ''NodeType
+
 data Node f a where
   Node ::  Traversable f => {_nodeType :: NodeType a, _fields ::  f (GrinValue f a)} -> Node f a
+deriving instance (Show a, Show (f (GrinValue f a))) => Show (Node f a)
 
---nodeType :: Lens' (Node f a) (NodeType a)
---nodeType = id
+class KnownTaggedNode a where
+  knownTag :: Prism' a GrinTag
 
---tag' :: Traversal' (Node f a) GrinTag
---tag' = _nodeType._NodeType._KnownTag
 
+instance (Alternative f, Traversable f) => KnownTaggedNode (Node f a) where
+  knownTag = prism' (\a -> Node (KnownTag a) empty) (\a -> case a of
+                                                   (BoxedNode t _) -> Just t
+                                                   _ -> Nothing)
+
+
+
+
+pattern BoxedNode tag fields = Node (KnownTag tag) fields
+pattern UnboxedNode fields = Node Tagless fields
 
 
 instance (Eq a, Eq (f a), Eq (f (GrinValue f a))) => Eq (Node f a) where
@@ -70,12 +75,20 @@ deriving instance ValueConstraint f a => Data (Node f a)
 
 
 data GrinValue f ty  where
-  SimpleValue :: SVal ty -> GrinValue f ty
+  SimpleValue :: GrinSimpleValue ty -> GrinValue f ty
   EmptyValue :: GrinValue f ty
-  PlainTag :: {tag ::  GrinTag  } -> GrinValue f ty
+  PlainTag :: {t ::  GrinTag  } -> GrinValue f ty
   NodeValue :: Traversable f => Node f a -> GrinValue f a
-  BasicValue :: BasicValue ty -> GrinValue f ty
+--  BasicValue :: BasicValue ty -> GrinValue f ty
   PointerValue :: Pointer ty -> GrinValue f ty
+
+instance (Alternative f, Traversable f) => KnownTaggedNode (GrinValue f ty) where
+  knownTag = prism' PlainTag (\a -> case a of (PlainTag t) -> Just t
+                                              (NodeValue n) -> n^?knownTag
+                                              _ -> Nothing
+                             )
+
+deriving instance (Show ty, Show (f (GrinValue f ty))) => Show (GrinValue f ty)
 deriving instance Typeable (GrinValue f ty)
 deriving instance ValueConstraint f ty  => Data (GrinValue f ty)
 deriving instance ValueConstraint f a => Plated (GrinValue f a) 
@@ -95,11 +108,4 @@ instance Applicative f => Monad (GrinValue f) where
 
 
 
-
-type SVal = GrinSimpleValue
-
-
-makeClassy  ''Node
-
---instance HasTag (Node f a) where
 
