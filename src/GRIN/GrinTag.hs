@@ -20,17 +20,19 @@ instance Monoid Arity where
   mappend = coerce ((+) :: Integer -> Integer -> Integer)
 
 
-data GrinTagType  = ConstructorTag  | FullyAppliedFunctionApplicationTag | PartialApplicationTag | NoTag deriving (Eq, Data, Typeable, Generic, Show)
+--data GrinTagType  = ConstructorTag  | FullyAppliedFunctionApplicationTag | PartialApplicationTag | NoTag deriving (Eq, Data, Typeable, Generic, Show)
 
 pattern EnumTag name = Constructor name 0
 
+-- | A 'GrinTag' can be thought of as being a type identifier in a Tarski-style universe with only product types.
+-- Tags are what identify different node types. There are several kinds of tags, each representing different constructs; however, the different tag types are only a convention used by the user of GRIN and the codegen, for convenience and optimisation purposes.
+-- In the GRIN language itself, tags are merely identifiers.
 data GrinTag  where
-  Constructor ::  {name' :: GrinIdentifier, arity' :: Arity} -> Tag
-  FunctionCall ::  { name' :: GrinIdentifier,  arity' :: Arity} -> Tag
-  PartialApplication :: {name' :: GrinIdentifier, arity' :: Arity} -> Tag
-  Unboxed :: Tag 
-  Hole :: {arity' :: Arity} -> Tag 
-  RecTag :: Tag 
+  Constructor ::  {name' :: GrinIdentifier, arity' :: Arity} -> Tag -- ^ Indicates a fully applied constructor from the higher level language. 
+  FunctionCall ::  { name' :: GrinIdentifier,  arity' :: Arity} -> Tag -- ^ Indicates a closure.
+  PartialApplication :: {name' :: GrinIdentifier, arity' :: Arity} -> Tag -- ^ Indicates a partial closure.
+  Hole :: {arity' :: Arity} -> Tag -- ^ We don't care what the tag is.
+  RecTag :: Tag -- ^ Trying to figure out if this is actually needed.
   deriving (Data,  Typeable, Show, Eq)
 --deriving instance Eq (GrinTag)
 

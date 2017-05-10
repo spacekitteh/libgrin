@@ -24,11 +24,11 @@ import Control.Lens.Combinators
 
 
 import Control.Applicative 
-data Boxing
-
-data Pointer ty = P deriving (Functor, Foldable, Traversable, Typeable, Show, Eq, Data)
 
 
+newtype Pointer ty = Pointer {locationName :: GrinVariable ty} deriving (Functor, Foldable, Traversable, Typeable, Show, Eq, Data)
+
+-- | 'NodeType a' represents the type of GRIN node. A node can either have a known constant tag, a variable tag, or have an empty tag ('tagless'). Another name for a tagless inode is an unboxed node.  
 data NodeType a where
   KnownTag :: {_knownTag :: GrinTag} -> NodeType a
   Tagless :: NodeType a
@@ -36,15 +36,22 @@ data NodeType a where
   deriving ( Eq, Functor, Foldable, Traversable,  Typeable, Show)
 deriving instance (Data a, Typeable a) => Data (NodeType a)
 
+
+-- Have to extend this to include things such as original high-level type. Could use the LLVM format?
+-- TODO: Remove EmptyValue from GrinValue and replace with pattern synonym. Likewise for PlainTag.
+-- | A node is the basic object that goes on the heap. It is composed of a tag, and a (possibly empty) collection of fields.
+-- Ideally, the codegen should be able to rearrange the fields to optimise memory access behaviour.
+-- A tagless node without any fields is equivalent to an 'EmptyValue'.
 data Node f a where
   Node ::  Traversable f => {_nodeType :: NodeType a, _fields ::  f (GrinValue f a)} -> Node f a
 deriving instance (Show a, Show (f (GrinValue f a))) => Show (Node f a)
 
-class KnownTaggedNode a where
+
+class WithKnownTag a where
   knownTag :: Prism' a GrinTag
 
 
-instance (Alternative f, Traversable f) => KnownTaggedNode (Node f a) where
+instance (Alternative f, Traversable f) => WithKnownTag (Node f a) where
   knownTag = prism' (\a -> Node (KnownTag a) empty) (\a -> case a of
                                                    (BoxedNode t _) -> Just t
                                                    _ -> Nothing)
@@ -57,7 +64,7 @@ pattern UnboxedNode fields = Node Tagless fields
 instance (Eq a, Eq (f a), Eq (f (GrinValue f a))) => Eq (Node f a) where
   (Node ty l) == (Node ty' l') = ty == ty' && l == l'
 
-
+-- Just because all these fucking Data/Typeable constraints should die in a fire
 type ValueConstraint f a = (Data a, Data (f (GrinValue f a)), Typeable f, Typeable a, Traversable f)
 
 deriving instance (Functor f, Functor (GrinValue f)) => Functor (Node f)
@@ -74,7 +81,7 @@ data GrinValue f ty  where
 --  BasicValue :: BasicValue ty -> GrinValue f ty
   PointerValue :: Pointer ty -> GrinValue f ty
 
-instance (Alternative f, Traversable f) => KnownTaggedNode (GrinValue f ty) where
+instance (Alternative f, Traversable f) => WithKnownTag (GrinValue f ty) where
   knownTag = prism' PlainTag (\a -> case a of (PlainTag t) -> Just t
                                               (NodeValue n) -> n^?knownTag
                                               _ -> Nothing
