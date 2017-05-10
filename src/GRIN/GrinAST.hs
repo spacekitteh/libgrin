@@ -77,14 +77,14 @@ type Name = GrinIdentifier
 type VariableName = GrinIdentifier
 type FunctionName = GrinIdentifier
 data GrinSimpleExpr f a where
-  Alloc :: {size :: Val f a} -> SExpr f a
-  Dealloc :: {target :: Val f a} -> SExpr f a
+  Alloc :: {size :: Val f a} -> SExpr f a -- ^ Ask for a pointer to a node with initial size 'size'.
+  Dealloc :: {target :: Pointer a} -> SExpr f a
   Unit :: Traversable f => {value :: Val f a {- FOR FFI ty :: Type-} } -> SExpr f a
   UpdateUnit :: {name :: VariableName, value :: Val f a} -> SExpr f a
   FetchNode :: {name :: Name} -> SExpr f a
   FetchUpdate :: {source :: Name, destination :: Name} -> SExpr f a
   FetchField :: {name :: Name, offset :: FieldOffset, tag ::  Maybe Tag } -> SExpr f a
-  Store :: {value :: Val f a} -> SExpr f a
+  Store :: {value :: Val f a} -> SExpr f a -- ^ Equivalent to an 'Alloc' followed by an 'UpdateUnit'.
   Call :: {name :: FunctionName, args :: f GrinIdentifier} -> SExpr f a
 {-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
