@@ -26,13 +26,7 @@ import Control.Lens.Combinators
 import Control.Applicative 
 data Boxing
 
-data Pointer ty = P deriving (Functor, Foldable, Traversable, Typeable, Show)
-deriving instance Eq (Pointer ty)
-deriving instance (Data ty, Typeable ty) => Data (Pointer ty)
-
-
-
-
+data Pointer ty = P deriving (Functor, Foldable, Traversable, Typeable, Show, Eq, Data)
 
 
 data NodeType a where
@@ -54,8 +48,6 @@ instance (Alternative f, Traversable f) => KnownTaggedNode (Node f a) where
   knownTag = prism' (\a -> Node (KnownTag a) empty) (\a -> case a of
                                                    (BoxedNode t _) -> Just t
                                                    _ -> Nothing)
-
-
 
 
 pattern BoxedNode tag fields = Node (KnownTag tag) fields
@@ -105,7 +97,4 @@ instance Applicative f => Applicative (GrinValue f)  where
 
 instance Applicative f => Monad (GrinValue f) where
   (Variable a)  >>= f = f a
-
-
-
 

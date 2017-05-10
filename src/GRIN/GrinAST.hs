@@ -126,7 +126,7 @@ pattern VariableTagNodePattern tagName fields = ValuePattern (NodeValue ( Node (
 
 type Alternative = GrinAlternative
 data GrinAlternative f a where
-  Alternative :: {pat :: CPat , expr :: Expr f a} -> Alternative f a
+  Alternative :: {pat :: CPat f , expr :: Expr f a} -> Alternative f a
 deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (Alternative f a)
 
 
@@ -137,8 +137,11 @@ deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier)) => 
 deriving instance Typeable (GrinAlternative)
 
   
-data GrinConstantPattern where
-  LiteralPattern ::  GrinLiteral  -> CPat 
-  TagPattern ::  Tag -> CPat 
-  ConstantNodePattern :: Tag  -> GrinIdentifier -> CPat 
-  deriving (Data, Typeable, Show)
+data GrinConstantPattern f where
+  LiteralPattern ::  GrinLiteral  -> CPat f
+  TagPattern ::  Tag -> CPat f
+  ConstantNodePattern :: Tag  -> f GrinIdentifier -> CPat f
+  deriving (Typeable)
+
+deriving instance (Data (f GrinIdentifier), Typeable f) => Data (GrinConstantPattern f)
+deriving instance (Show (f GrinIdentifier)) => Show (GrinConstantPattern f)

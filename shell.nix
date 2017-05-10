@@ -9,7 +9,7 @@ let
  hspec-expectations-lens
  hspec-checkers
  hspec-smallcheck
- 
+ freer-effects
  lens
  megaparsec
  hoopl
