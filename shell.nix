@@ -10,7 +10,7 @@ let
  hspec-checkers
  hspec-smallcheck
  freer-effects
- lens
+ lens_4_15_2
  megaparsec
  hoopl
  constraints
@@ -51,15 +51,17 @@ let
 # llvm-hs-pretty
 
  megaparsec
- idris
+# idris
  structured-haskell-mode
 ]);
    
  emacsWithMyPackages = let customEmacsPackages = pkgs.emacsPackagesNg.overrideScope (super: self: {
       emacs = pkgs.emacs.override { withGTK2 = true; withGTK3 = false; }; }); in
-      customEmacsPackages.emacsWithPackages 
-        (with pkgs.emacsPackagesNg;
-          [ ghc-mod
+      customEmacsPackages.emacsWithPackages         
+        (epkgs: 
+         (with pkgs.emacsPackagesNg; [ 
+            ghc-mod
+	    org
             haskell-mode
             structured-haskell-mode
             rainbow-delimiters
@@ -69,13 +71,15 @@ let
             idris-mode
             org-trello            
             auctex
-            magit ]);
+            magit 
+           ]) ++ ([pkgs.emacsPackages.proofgeneral_HEAD]));
 
   llvm = pkgs.llvm_39;
   git = pkgs.git;
   cabal2nix = pkgs.cabal2nix;
   busybox = pkgs.busybox;
   sphinx = pkgs.pythonPackages.sphinx;
+  coqPackages = pkgs.coqPackages_8_6;
 in
 pkgs.stdenv.mkDerivation {
   name = "haskell-env-1";
@@ -88,6 +92,15 @@ pkgs.stdenv.mkDerivation {
   cabal2nix
   busybox
   pkgs.libressl
+  coqPackages.ssreflect
+  coqPackages.mathcomp
+#  pkgs.coqPackages.contribs.all
+#  coqPackages.domains
+  coqPackages.QuickChick
+  coqPackages.coq-ext-lib
+#  coqPackages.unimath
+  pkgs.compcert
+  
   ];
   
   shellHook = "eval $(egrep ^export ${ghc}/bin/ghc)";
