@@ -57,6 +57,7 @@ data Shape = Open | Closed
 data GrinExpr f a where
   Seq :: {expr :: GrinSimpleExprX ext f a, pat :: LPat f a, body :: Expr f a} -> Expr f a
   Case :: {value :: Val f a, alternatives :: Alternatives f (GrinExpr f a)  } -> Expr f a
+  Phi :: {value :: Val f a, alternatives :: GrinValue f a} -> Expr f a
   SimpleExpr :: GrinSimpleExprX ext f a -> Expr f a
   Fix :: {bnd :: Expr f a} -> Expr f a
   deriving  Typeable
@@ -85,6 +86,7 @@ data GrinSimpleExprX ext f a where
   UpdateUnitX :: {name :: VariableName, value :: Val f a} -> GrinSimpleExprX ext f a -- ^ Updates the node pointed to by 'name' with 'value', and returns 'value'.
   CallX :: {name :: FunctionName, args :: f GrinIdentifier} -> GrinSimpleExprX ext f a -- ^ Calls a function 'name' with arguments 'args'.
   GrinSimpleExprExt :: GrinSimpleExprExtType ext f a -> GrinSimpleExprX ext f a
+  
 {-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
   deriving Typeable
