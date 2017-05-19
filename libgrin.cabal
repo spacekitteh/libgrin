@@ -57,7 +57,7 @@ library
   other-extensions:    PatternSynonyms, LambdaCase, GADTs, PolyKinds, TypeOperators, DeriveDataTypeable, RankNTypes, ScopedTypeVariables, TemplateHaskell, DataKinds
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.9 && <4.10, containers >= 0.5.7.1, hoopl, lens >= 4.15.2, template-haskell >=2.11 && <2.12, text >= 1.2.2.1, constraints
+  build-depends:       base >=4.9 && <4.10, constraints, containers >= 0.5.7.1, freer-effects >= 0.3.0.1, hoopl, lens >= 4.15.2, template-haskell >=2.11 && <2.12, text >= 1.2.2.1
   
   -- Directories containing source files.
   hs-source-dirs:      src
