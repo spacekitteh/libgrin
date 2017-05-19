@@ -6,7 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds, EmptyDataDecls,  TypeInType, TypeOperators, ExistentialQuantification, RankNTypes, DefaultSignatures,
-GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving, DeriveAnyClass #-}
+GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving, DeriveAnyClass , FlexibleContexts#-}
 
 module GRIN.GrinSimpleExpression where
 import qualified Data.Map.Strict as Map
@@ -52,9 +52,22 @@ type family (GrinSimpleExprExtType1 (ext :: k) (f:: * -> * )  ) = (r :: * -> *) 
 --type instance (GrinSimpleExprExtType1 (ext ': r) f = GrinSimpleExprExtType1 (Union ext 
 
 
-instance {-# OVERLAPPING #-} Functor ( GrinSimpleExprX (ext ': r) f ) where
+--instance (Functor ( GrinSimpleExprExtType1 ext f)) =>  Functor (GrinSimpleExprExtType1 (ext : b) f )where
+--instance forall f r . ( Functor f, Member f r)  => Functor (Union r) where
+--  fmap f a = a
+  
 
-instance {-# OVERLAPPING #-} Functor (GrinSimpleExprX '[] f) where
+instance (Functor f, Functor (Union r)) => Functor (Union (f : r)) where
+  fmap f a = case decomp a of
+               Right t -> inj( fmap f t)
+               Left t -> weaken (fmap f t)
+  
+instance {-# OVERLAPPING #-} (GrinSimpleExprExtConstraint1 Functor (ext ) f) => Functor ( GrinSimpleExprX (Union (ext : b)) f ) where
+  fmap f (UnitX v) = UnitX (fmap f v)
+  fmap f (UpdateX n v) = UpdateX n (fmap f v)
+  fmap f (CallX n a) = CallX n a
+  fmap f (GrinSimpleExprExt v) = GrinSimpleExprExt (fmap f v)
+instance {-# OVERLAPPING #-} Functor (GrinSimpleExprX [] f) where
   fmap f (UnitX v) = UnitX (fmap f v)
   fmap f (UpdateX n v) = UpdateX n (fmap f v)
   fmap f (CallX n a) = CallX n a
