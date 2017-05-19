@@ -91,7 +91,7 @@ deriving instance (Show ty, Show (f (GrinValue f ty))) => Show (GrinValue f ty)
 deriving instance Typeable (GrinValue f ty)
 deriving instance ValueConstraint f ty  => Data (GrinValue f ty)
 deriving instance ValueConstraint f a => Plated (GrinValue f a) 
-pattern Variable a = SimpleValue (VarValue (Var a))
+pattern Variable a name = SimpleValue (VarValue (Var a name ))
 
 deriving instance (Eq ty, Eq (f ty), Eq (f (GrinValue f ty))) => Eq (GrinValue f ty)
 deriving instance Functor (GrinValue f)
@@ -99,9 +99,9 @@ deriving instance  Foldable (GrinValue f)
 deriving instance Traversable (GrinValue f)
 
 instance Applicative f => Applicative (GrinValue f)  where
-  pure a = Variable a
-  Variable f <*> a  = f <$> a
+  pure a = Variable a Nothing
+  Variable f _ <*> a  = f <$> a
 
 instance Applicative f => Monad (GrinValue f) where
-  (Variable a)  >>= f = f a
+  (Variable a _)  >>= f = f a
 

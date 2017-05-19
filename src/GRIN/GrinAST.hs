@@ -16,6 +16,7 @@ import GRIN.GrinLiteral
 import GRIN.GrinVariable
 import GRIN.GrinValue
 import GRIN.GrinTag
+import GRIN.GrinCase
 import GRIN.GrinSimpleValue
 type Expr = GrinExpr
 type Tags = [Tag]
@@ -42,15 +43,15 @@ type Alternatives f a = [Alternative f a]
 data Type 
 type FieldOffset = Int
 
-data CallConvention
-data ForeignEnt
-data FFIAnnotation
+--data CallConvention
+--data ForeignEnt
+--data FFIAnnotation
 
 data Shape = Open | Closed
 
 data GrinExpr f a where
   Seq :: {expr :: SExpr f a, pat :: LPat f a, body :: Expr f a} -> Expr f a
-  Case :: {value :: Val f a, alternatives :: Alternatives f a} -> Expr f a
+  Case :: {value :: Val f a, alternatives :: Alternatives f (GrinExpr f a)  } -> Expr f a
   SimpleExpr :: SExpr f a -> Expr f a
   Fix :: {bnd :: Expr f a} -> Expr f a
   deriving  Typeable
@@ -65,17 +66,32 @@ deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier))  =>
 
 
 instance Traversable f => Applicative (GrinExpr f) where
-  pure a = SimpleExpr (Unit (Variable a))
-  (SimpleExpr (Unit (Variable f))) <*>  a = f <$> a
+  pure a = SimpleExpr (Unit (Variable a Nothing))
+  (SimpleExpr (Unit (Variable f _))) <*>  a = f <$> a
 
 instance Traversable f => Monad (GrinExpr f) where
-  (SimpleExpr (Unit (Variable a))) >>= f = f a
+  (SimpleExpr (Unit (Variable a _))) >>= f = f a
   
 type SExpr = GrinSimpleExpr
 type Val = GrinValue
 type Name = GrinIdentifier
 type VariableName = GrinIdentifier
 type FunctionName = GrinIdentifier
+
+data GrinSimpleExprX ext f a where
+  AllocX :: {size :: Val f a} -> GrinSimpleExprX ext f a -- ^ Ask for a pointer to a node with initial size 'size'.
+  DeallocX :: {target :: Pointer a} -> GrinSimpleExprX ext f a
+  UnitX :: Traversable f => {value :: Val f a {- FOR FFI ty :: Type-} } -> GrinSimpleExprX ext f a
+  UpdateUnitX :: {name :: VariableName, value :: Val f a} -> GrinSimpleExprX ext f a
+  FetchNodeX :: {name :: Name} -> GrinSimpleExprX ext f a
+  FetchUpdateX :: {source :: Name, destination :: Name} -> GrinSimpleExprX ext f a
+  FetchFieldX :: {name :: Name, offset :: FieldOffset, tag ::  Maybe Tag } -> GrinSimpleExprX ext f a
+  StoreX :: {value :: Val f a} -> GrinSimpleExprX ext f a -- ^ Equivalent to an 'Alloc' followed by an 'UpdateUnit'.
+  CallX :: {name :: FunctionName, args :: f GrinIdentifier} -> GrinSimpleExprX ext f a
+{-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
+       ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
+  EvalX :: {name :: Name} -> GrinSimpleExprX ext f a
+
 data GrinSimpleExpr f a where
   Alloc :: {size :: Val f a} -> SExpr f a -- ^ Ask for a pointer to a node with initial size 'size'.
   Dealloc :: {target :: Pointer a} -> SExpr f a
@@ -89,10 +105,9 @@ data GrinSimpleExpr f a where
 {-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
   Eval :: {name :: Name} -> SExpr f a
---  App :: {name :: VariableName, args :: f GrinIdentifier} -> SExpr f a
-
 
   deriving  (  Typeable)
+
 deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (GrinSimpleExpr f a)
 deriving instance Functor (GrinSimpleExpr f)
 deriving instance Foldable (GrinSimpleExpr f)
@@ -100,14 +115,12 @@ deriving instance Traversable (GrinSimpleExpr f)
 deriving instance (ValueConstraint f a, Data (f GrinIdentifier))  => Data (GrinSimpleExpr f a)
 
 instance Traversable f => Applicative (GrinSimpleExpr f) where
-  pure a = Unit (Variable a)
-  Unit (Variable f) <*> a = f <$> a
+  pure a = Unit (Variable a Nothing)
+  Unit (Variable f _) <*> a = f <$> a
   
 type LPat = GrinLambdaPattern
-type CPat = GrinConstantPattern
 
   
-
 data GrinLambdaPattern f a where
   ValuePattern :: GrinValue f a -> LPat f a
   deriving (Functor, Foldable, Traversable, Typeable)
@@ -125,23 +138,3 @@ pattern VariableTagNodePattern tagName fields = ValuePattern (NodeValue ( Node (
 
 
 type Alternative = GrinAlternative
-data GrinAlternative f a where
-  Alternative :: {pat :: CPat f , expr :: Expr f a} -> Alternative f a
-deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier)) => Show (Alternative f a)
-
-
-deriving instance Functor (GrinAlternative f)
-deriving instance Foldable (GrinAlternative f)
-deriving instance Traversable (GrinAlternative f)
-deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier)) => Data (GrinAlternative f a)
-deriving instance Typeable (GrinAlternative)
-
-  
-data GrinConstantPattern f where
-  LiteralPattern ::  GrinLiteral  -> CPat f
-  TagPattern ::  Tag -> CPat f
-  ConstantNodePattern :: Tag  -> f GrinIdentifier -> CPat f
-  deriving (Typeable)
-
-deriving instance (Data (f GrinIdentifier), Typeable f) => Data (GrinConstantPattern f)
-deriving instance (Show (f GrinIdentifier)) => Show (GrinConstantPattern f)

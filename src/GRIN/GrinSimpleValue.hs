@@ -39,6 +39,6 @@ instance Applicative GrinSimpleValue where
   (VarValue f) <*>( VarValue a) = VarValue (f <*> a)
 
 instance Monad GrinSimpleValue where
-  (VarValue (Var a)) >>= f = (f a)
+  (VarValue (Var a _)) >>= f = (f a)
 
 

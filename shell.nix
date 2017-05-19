@@ -4,6 +4,9 @@ let
   ghc = pkgs.haskell.packages.${compiler}.ghcWithHoogle (ps: with ps; 
 [ ghc-mod
  hspec
+ unbound
+# bound
+# graph-rewriting
  hspec-megaparsec
  hspec-laws
  hspec-expectations-lens
