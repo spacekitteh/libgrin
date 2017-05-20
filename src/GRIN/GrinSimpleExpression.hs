@@ -75,22 +75,6 @@ instance {-#OVERLAPPING #-}(ConstrainedMembers Functor r,  r ~ (h : tail), Funct
                Left remainder -> weaken (fmap f remainder)
 
 
-type family ConstrainAllExts (constr :: (* -> *) -> Constraint) (f :: * -> * ) (l :: [ * -> * ]) = (r :: Constraint)  where
-  ConstrainAllExts constr f (h : t) = (GrinSimpleExprExtConstraint1 constr h f, ConstrainAllExts constr f t)
-  ConstrainAllExts constr f '[] = ()
-
-instance {-# OVERLAPPING #-} (ConstrainAllExts Functor f exts, exts ~ (ext ': b)) => Functor ( GrinSimpleExprX exts f ) where
-  fmap f (UnitX v) = UnitX (fmap f v)
-  fmap f (UpdateX n v) = UpdateX n (fmap f v)
-  fmap f (CallX n a) = CallX n a
-  fmap f (GrinSimpleExprExt v) = GrinSimpleExprExt (fmap f v)
-instance {-# OVERLAPPING #-} Functor (GrinSimpleExprX [] f) where
-  fmap f (UnitX v) = UnitX (fmap f v)
-  fmap f (UpdateX n v) = UpdateX n (fmap f v)
-  fmap f (CallX n a) = CallX n a
-
-
---f :: (Member (GrinSimpleExprExtType1 ext1 f) r, Member (GrinSimpleExprExtType1 ext2 f) r) => 
 
 
 type family GrinSimpleExprExtConstraint1 (constr :: (* -> *) -> Constraint) ext (f :: * -> *) = (r :: Constraint)  where
