@@ -6,7 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds, EmptyDataDecls,  TypeInType, TypeOperators, ExistentialQuantification, RankNTypes, DefaultSignatures,
-GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving, DeriveAnyClass , FlexibleContexts#-}
+GADTs, DuplicateRecordFields, PatternSynonyms, DeriveTraversable, DeriveGeneric, DeriveDataTypeable, DeriveLift, StandaloneDeriving, DeriveAnyClass , FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables #-}
 
 module GRIN.GrinSimpleExpression where
 import qualified Data.Map.Strict as Map
@@ -26,6 +26,7 @@ import GRIN.GrinCase
 import GRIN.GrinSimpleValue
 import Data.Coerce
 import Data.OpenUnion
+import Data.OpenUnion.Internal
 
 type VariableName = GrinIdentifier
 type FunctionName = GrinIdentifier
@@ -40,29 +41,45 @@ data GrinSimpleExprX (ext::k) f a where
   deriving Typeable
 
 
-type family  GrinSimpleExprExtType (ext::k) (f:: * -> *) a = (r :: *) | r -> ext  where
+type family  GrinSimpleExprExtType (ext::k) (f:: * -> *) a = (r :: *)   where
   GrinSimpleExprExtType ext f a = GrinSimpleExprExtType1 ext f a
 
 
-type family GrinSimpleExprExtConstraint (constr :: * -> Constraint) ext (f :: * -> *) a = (r :: Constraint) | r -> ext where
+type family GrinSimpleExprExtConstraint (constr :: * -> Constraint) ext (f :: * -> *) a = (r :: Constraint)  where
   GrinSimpleExprExtConstraint constr ext f a = constr (GrinSimpleExprExtType ext f a)
 
 
-type family (GrinSimpleExprExtType1 (ext :: k) (f:: * -> * )  ) = (r :: * -> *) | r -> ext
---type instance (GrinSimpleExprExtType1 (ext ': r) f = GrinSimpleExprExtType1 (Union ext 
+type family (GrinSimpleExprExtType1 (ext :: k) (f:: * -> * )  ) = (r :: * -> *) 
+
+type family MapList (l :: [ * -> * ]) f  = (r :: [* -> *] )  where
+  MapList '[ext] f = '[GrinSimpleExprExtType1 ext f]
+  MapList (ext ': rest) f = (GrinSimpleExprExtType1 ext f) : MapList rest f
+
+type instance GrinSimpleExprExtType1 (Union (ext :: [ * -> * ])) f  = Union (MapList ext f)
 
 
---instance (Functor ( GrinSimpleExprExtType1 ext f)) =>  Functor (GrinSimpleExprExtType1 (ext : b) f )where
---instance forall f r . ( Functor f, Member f r)  => Functor (Union r) where
---  fmap f a = a
-  
 
-instance (Functor f, Functor (Union r)) => Functor (Union (f : r)) where
+
+                                                              
+type family ConstrainedMembers constr l = (r :: Constraint) where
+  ConstrainedMembers constr (t ': c) = (constr t, ConstrainedMembers constr c)
+  ConstrainedMembers constr '[] = ()
+
+
+
+instance {-#OVERLAPPING #-} Functor (Union '[]) where
+  fmap f a = error "Absurd"
+instance {-#OVERLAPPING #-}(ConstrainedMembers Functor r,  r ~ (h : tail), Functor (Union tail)) => Functor (Union r) where
   fmap f a = case decomp a of
-               Right t -> inj( fmap f t)
-               Left t -> weaken (fmap f t)
-  
-instance {-# OVERLAPPING #-} (GrinSimpleExprExtConstraint1 Functor (ext ) f) => Functor ( GrinSimpleExprX (Union (ext : b)) f ) where
+               Right t -> inj (fmap f t)
+               Left remainder -> weaken (fmap f remainder)
+
+
+type family ConstrainAllExts (constr :: (* -> *) -> Constraint) (f :: * -> * ) (l :: [ * -> * ]) = (r :: Constraint)  where
+  ConstrainAllExts constr f (h : t) = (GrinSimpleExprExtConstraint1 constr h f, ConstrainAllExts constr f t)
+  ConstrainAllExts constr f '[] = ()
+
+instance {-# OVERLAPPING #-} (ConstrainAllExts Functor f exts, exts ~ (ext ': b)) => Functor ( GrinSimpleExprX exts f ) where
   fmap f (UnitX v) = UnitX (fmap f v)
   fmap f (UpdateX n v) = UpdateX n (fmap f v)
   fmap f (CallX n a) = CallX n a
@@ -74,9 +91,9 @@ instance {-# OVERLAPPING #-} Functor (GrinSimpleExprX [] f) where
 
 
 --f :: (Member (GrinSimpleExprExtType1 ext1 f) r, Member (GrinSimpleExprExtType1 ext2 f) r) => 
-f = undefined
 
-type family GrinSimpleExprExtConstraint1 (constr :: (* -> *) -> Constraint) ext (f :: * -> *) = (r :: Constraint) | r -> ext where
+
+type family GrinSimpleExprExtConstraint1 (constr :: (* -> *) -> Constraint) ext (f :: * -> *) = (r :: Constraint)  where
   GrinSimpleExprExtConstraint1 constr ext f = constr (GrinSimpleExprExtType1 ext f)
 
 
