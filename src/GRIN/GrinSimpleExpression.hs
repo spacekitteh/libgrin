@@ -43,14 +43,6 @@ data GrinSimpleExprX (ext :: k) (f :: * -> *) a where
   deriving Typeable
 
 
---type family  GrinSimpleExprExtType (ext::k) (f:: * -> *) a = (r :: *)   where
---  GrinSimpleExprExtType ext f a = GrinSimpleExprExtType1 ext f a
-
-
---type family GrinSimpleExprExtConstraint (constr :: * -> Constraint) ext (f :: * -> *) a = (r :: Constraint)  where
---  GrinSimpleExprExtConstraint constr ext f a = constr (GrinSimpleExprExtType ext f a)
-
-
 class (Functor (SExprExt ext f), Foldable (SExprExt ext f), Traversable (SExprExt ext f)) =>  SimpleExprExtension ext f a where
   type  SExprExt  ext f  = (r :: (* -> *)) | r -> ext
   functorWitness :: p ext f a -> Dict (Functor (SExprExt ext f))
@@ -60,30 +52,24 @@ class (Functor (SExprExt ext f), Foldable (SExprExt ext f), Traversable (SExprEx
   traversableWitness :: p ext f a -> Dict (Traversable (SExprExt ext f))
   traversableWitness _ = Dict
 
---type family (GrinSimpleExprExtType1 (ext :: k) (f:: * -> * )  ) = (r :: * -> *) 
-
 
 
 type family MapList (l :: [ * -> * ]) f  = (r :: [* -> *] ) | r -> l  where
   MapList '[] f = '[]
-  MapList (ext ': '[]) f = '[SExprExt ext f]
-  MapList (ext1 ': ext2 ': rest) f = (SExprExt ext1 f) : (SExprExt ext2 f) : MapList rest f
+  MapList (ext ': rest) f = (SExprExt ext f) ': MapList rest f
 
---type instance GrinSimpleExprExtType1 (Union (ext :: [ * -> * ])) f  = Union (MapList ext f)
+type MapConstraint constr l f = ConstrainedMembers constr (MapList l f)
 
-instance SimpleExprExtension ('[] :: [* -> *]) f a where
+instance {-#OVERLAPPING#-}SimpleExprExtension ('[] :: [* -> *]) f a where
   type SExprExt ('[] :: [* -> *]) f = Union ((MapList ('[] :: [* -> *]) f))
 
-instance SimpleExprExtension ((ext ': '[]) :: [* -> *]) f a where
-  type SExprExt ((ext ': '[]) :: [* -> *]) f = Union (MapList ((ext ': '[]) :: [* -> *]) f)
-
-instance  SimpleExprExtension ((ext1 ': ext2 ': rest) :: [* -> *]) f a where
-  type SExprExt (ext1 ': ext2 ': rest) f = Union (MapList ((ext1 ': ext2 ': rest) :: [* -> *]) f)
+instance {-#OVERLAPPING#-} forall (r :: [ * -> *]) f a. (MapConstraint Traversable r f) => SimpleExprExtension r f a where
+  type SExprExt r f = Union ((MapList r) f)
 
 
 
                                                               
-type family ConstrainedMembers constr l = (r :: Constraint) where
+type family ConstrainedMembers constr (l :: [ * -> *]) = (r :: Constraint) | r -> l where
   ConstrainedMembers constr (t ': c) = (constr t, ConstrainedMembers constr c)
   ConstrainedMembers constr '[] = ()
 
@@ -95,7 +81,7 @@ instance {-#OVERLAPPING #-} Functor (Union '[]) where
 instance {-#OVERLAPPING #-} (ConstrainedMembers Functor r,  r ~ (h : tail), Functor (Union tail)) => Functor (Union r) where
   fmap f a = case decomp a of
                Right t -> inj (fmap f t)
-               Left remainder -> weaken (fmap f remainder)
+               Left remainder ->  weaken (fmap f remainder)
 
 
 instance {-#OVERLAPPING#-} Foldable (Union '[]) where
@@ -109,10 +95,10 @@ instance {-#OVERLAPPING#-} (ConstrainedMembers Foldable r, r ~ (h : tail), Folda
 instance {-#OVERLAPPING#-} Traversable (Union '[]) where
   traverse f t = error "What to do here?!"
 
-instance {-#OVERLAPPING#-} (ConstrainedMembers Traversable r, r ~ (h : tail), Traversable (Union tail)) => Traversable (Union r) where
-  traverse (f :: _) t = case decomp t of
-                   Right (a:: h a) -> pure _
-                   Left remainder -> _ (traverse f remainder)
+instance {-#OVERLAPPING#-} (ConstrainedMembers Functor tail, ConstrainedMembers Foldable tail, ConstrainedMembers Traversable r, r ~ (h : tail), Traversable (Union tail)) => Traversable (Union r) where
+  traverse (f :: a -> f b) t = case decomp t of
+                   Right (a:: h a) -> pure undefined
+                   Left remainder -> undefined (traverse f remainder)
 
 instance {-#OVERLAPPING#-} Applicative (Union '[]) where
   pure  = error "Absurd!"
