@@ -65,12 +65,12 @@ data GrinExpr ext f a where
   deriving  Typeable
 
 deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier), Show (GrinSimpleExprExtType ext f a)) => Show (GrinExpr ext f a)
-deriving instance (Data (f a), ValueConstraint f a, Data (f GrinIdentifier))  => Plated (GrinExpr ext f a) 
+deriving instance forall k (ext :: k) f a . (Data (f a), ValueConstraint f a, Data (f GrinIdentifier), Data (GrinSimpleExprExtType1 ext f a), Typeable ext, Typeable k)  => Plated (GrinExpr ext f a) 
   
-deriving instance Functor (GrinExpr ext f)
-deriving instance Foldable (GrinExpr ext f)
-deriving instance Traversable (GrinExpr ext f)
-deriving instance (ValueConstraint f a, Data (f a), Data (f GrinIdentifier))  => Data (GrinExpr ext f a)
+deriving instance (Functor (GrinSimpleExprExtType1 ext f)) => Functor (GrinExpr ext f)
+deriving instance (Foldable (GrinSimpleExprExtType1 ext f)) => Foldable (GrinExpr ext f)
+deriving instance (Traversable (GrinSimpleExprExtType1 ext f)) => Traversable (GrinExpr ext f)
+deriving instance forall k (ext :: k) (f :: * -> *) a .  (ValueConstraint f a, Data (f a), Data (f GrinIdentifier), Typeable ext, Data (GrinSimpleExprExtType1 ext f a), Typeable k)  => Data (GrinExpr ext f a)
 
 
 instance Traversable f => Applicative (GrinExpr ext f) where

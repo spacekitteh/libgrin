@@ -23,6 +23,7 @@ let
  haskintex
  freer
  text
+ plan-applicative
  text-format
  annotated-wl-pprint
  cabal-install
