@@ -5,8 +5,11 @@ let
 [ ghc-mod
  hspec
  unbound
-# bound
-# graph-rewriting
+ ghc-typelits-presburger
+  presburger
+  equational-reasoning
+ bound
+ graph-rewriting
  hspec-megaparsec
  hspec-laws
  hspec-expectations-lens
@@ -50,12 +53,13 @@ let
  optparse-applicative
  configurator 
  data-category
- llvm-hs
+ llvm-hs-pure
+# llvm-hs
 # llvm-hs-typed
 # llvm-hs-pretty
 
  megaparsec
-# idris
+ idris
  structured-haskell-mode
 ]);
    
