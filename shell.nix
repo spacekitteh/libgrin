@@ -53,7 +53,7 @@ let
  optparse-applicative
  configurator 
  data-category
- llvm-hs-pure
+# llvm-hs-pure_4_1_0_0
 # llvm-hs
 # llvm-hs-typed
 # llvm-hs-pretty
