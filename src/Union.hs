@@ -64,6 +64,7 @@ import Data.Maybe (Maybe(Just, Nothing))
 import Data.Word (Word)
 import Data.Functor
 import Data.Coerce
+import Control.Monad
 import Data.Constraint
 import Data.Constraint.Lifting
 import Data.Proxy
@@ -260,32 +261,32 @@ instance forall constr h tail . (Constrain Traversable constr h tail) => Travers
 instance (constr t, Traversable t) => Traversable (Union constr '[t]) where
   traverse f u = fmap inj $  traverse f (extract u)
 
---  sequenceA :: forall f a. (Constrain Traversable constr h tail, Applicative f) => Union constr (h ': tail) (f a) -> f (Union constr (h ': tail) a)
---  sequenceA u@(Union p a) = case decomp u of
---                  Right t ->  ( _ t)
+
+PLATED
 
 
-{- APPLICATIVE
-
-
-instance (Constrain Applicative constr h tail, Member Identity r, r ~ (h ': tail), constr Identity) => Applicative (Union constr (h ': tail)) where
+{-instance (Member Identity r, r ~ (h ': tail), constr Identity, Constrain Monad constr h tail, Monad (Union constr (h ': tail))) => Applicative (Union constr (h ': tail)) where
   pure a = inj (Identity a)
-  f' <*> a' =  inj (f <*> a) where
-               a = fix (\x -> case decomp a' of
-                                Right a'' -> a''
-                                Left r -> error "waddup")
-               f  = fix (\x -> case decomp f' of
-                                Right f'' -> f''
-                                Left r -> error "fool")
+  (<*>) = ap
+
+
+
 instance (constr k, Applicative k) => Applicative (Union constr '[k]) where
   pure :: forall constr k a . (constr k, Applicative k) => a -> Union constr '[k] a
   pure a = let t  = ((pure @ k a) :: k a) in inj t
   f <*> a = inj ((extract f) <*> (extract a))
-f :: Union (Functor :&&: Foldable :&&: Monad) '[Maybe, [], Identity] (Integer -> Integer)
+
+instance (Constrain Traversable constr h tail, Constrain Monad constr h tail, r ~ (h ': tail), constr Identity, Member Identity r) => Monad (Union constr (h ': tail)) where
+  (>>=) :: Union constr (h ': tail) a -> (a -> Union constr (h ': tail) b) -> Union constr (h ': tail) b
+  a''@(Union 0 t) >>= f = fold $ fmap f a where
+    a :: h a
+    a = unsafeCoerce t
+
+f :: Union (Functor :&&: Foldable :&&: Monad :&&: Applicative) '[Identity, Maybe, []] (Integer -> Integer)
 f = pure inc
 z = f <*> a
 -}
-a :: Union (Functor :&&: Foldable :&&: Monad) '[Maybe,[], Identity] Integer
+a :: Union (Functor :&&: Foldable :&&: Monad :&&: Applicative) '[Identity, Maybe,[]] Integer
 a = inj [5]
 
 inc a = a + 1
