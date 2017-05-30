@@ -254,8 +254,11 @@ instance (constr t, Foldable t) => Foldable (Union constr '[t]) where
 
 instance forall constr h tail . (Constrain Traversable constr h tail) => Traversable (Union constr (h ': tail)) where
   traverse f u = case decomp u of
-                   Right t ->  _ (fmap f t)
+                   Right t ->  fmap inj (traverse f t)
+                   Left t -> fmap weaken $ traverse f t
 
+instance (constr t, Traversable t) => Traversable (Union constr '[t]) where
+  traverse f u = fmap inj $  traverse f (extract u)
 
 --  sequenceA :: forall f a. (Constrain Traversable constr h tail, Applicative f) => Union constr (h ': tail) (f a) -> f (Union constr (h ': tail) a)
 --  sequenceA u@(Union p a) = case decomp u of
