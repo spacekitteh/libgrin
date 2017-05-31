@@ -63,6 +63,7 @@ import Data.Function (($), fix)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Word (Word)
 import Data.Functor
+import Control.Lens.Plated
 import Data.Coerce
 import Control.Monad
 import Data.Constraint
@@ -262,9 +263,20 @@ instance (constr t, Traversable t) => Traversable (Union constr '[t]) where
   traverse f u = fmap inj $  traverse f (extract u)
 
 
-PLATED
+{-unionConstructor :: Constr
+unionConstructor = mkConstr unionDataType "Union" [] Prefix
 
+unionDataType :: DataType
+unionDataType = mkDataType "Union" [unionConstructor]
+instance (Constrain0 Data constr h tail a, Typeable constr, Typeable h, Typeable tail, Typeable a) => Data (Union constr (h ': tail) a) where
+  dataTypeOf _ = unionDataType
+  toConstr _ = unionConstructor
+  gunfold ::  (forall b r . Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c (Union constr (h ': tail) a)
+  gunfold k z _ =  k (k (z (Union  )))
 
+-}
+-- USE PLATED
+                                                   
 {-instance (Member Identity r, r ~ (h ': tail), constr Identity, Constrain Monad constr h tail, Monad (Union constr (h ': tail))) => Applicative (Union constr (h ': tail)) where
   pure a = inj (Identity a)
   (<*>) = ap
