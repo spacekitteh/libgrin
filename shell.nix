@@ -2,7 +2,7 @@
 let
   inherit (nixpkgs) pkgs;
   ghc = pkgs.haskell.packages.${compiler}.ghcWithHoogle (ps: with ps; 
-[ ghc-mod
+[# ghc-mod
  hspec
  unbound
  ghc-typelits-presburger
@@ -16,7 +16,7 @@ let
  hspec-checkers
  hspec-smallcheck
  freer-effects
- lens_4_15_2
+ lens
  megaparsec
  hoopl
  constraints
@@ -53,7 +53,7 @@ let
  optparse-applicative
  configurator 
  data-category
-# llvm-hs-pure_4_1_0_0
+ llvm-hs-pure
 # llvm-hs
 # llvm-hs-typed
 # llvm-hs-pretty
@@ -68,12 +68,15 @@ let
       customEmacsPackages.emacsWithPackages         
         (epkgs: 
          (with pkgs.emacsPackagesNg; [ 
-            ghc-mod
+#            ghc-mod
 	    org
             haskell-mode
             structured-haskell-mode
             rainbow-delimiters
             company-ghc
+            company
+            color-theme-solarized
+            
             flycheck-haskell
             org-plus-contrib
             idris-mode
@@ -100,12 +103,12 @@ pkgs.stdenv.mkDerivation {
   cabal2nix
   busybox
   pkgs.libressl
-  coqPackages.ssreflect
-  coqPackages.mathcomp
+  #coqPackages.ssreflect
+  #coqPackages.mathcomp
 #  pkgs.coqPackages.contribs.all
 #  coqPackages.domains
-  coqPackages.QuickChick
-  coqPackages.coq-ext-lib
+  #coqPackages.QuickChick
+  #coqPackages.coq-ext-lib
 #  coqPackages.unimath
   pkgs.compcert
   

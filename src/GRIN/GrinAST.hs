@@ -49,7 +49,7 @@ data Binding where
 type Alternatives f a = [Alternative f a]
 data Type 
 
-
+data Label
 --data CallConvention
 --data ForeignEnt
 --data FFIAnnotation
@@ -62,15 +62,16 @@ data GrinExpr ext f a where
   Phi :: {value :: Val f a, possibleValues :: GrinValue f a} -> Expr ext f a
   SimpleExpr :: GrinSimpleExprX ext f a -> Expr ext f a
   Fix :: {bound :: LPat f a, bnd :: Expr ext f a} -> Expr ext f a
+  Jump :: Label -> Expr ext f a
   deriving  Typeable
 
-deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier), Show (GrinSimpleExprExtType ext f a)) => Show (GrinExpr ext f a)
-deriving instance forall k (ext :: k) f a . (Data (f a), ValueConstraint f a, Data (f GrinIdentifier), Data (GrinSimpleExprExtType1 ext f a), Typeable ext, Typeable k)  => Plated (GrinExpr ext f a) 
+deriving instance (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier), Show (SExprExt ext f a)) => Show (GrinExpr ext f a)
+deriving instance forall k (ext :: k) f a . (Data (f a), ValueConstraint f a, Data (f GrinIdentifier), Data (SExprExt ext f a), Typeable ext, Typeable k)  => Plated (GrinExpr ext f a) 
   
-deriving instance (Functor (GrinSimpleExprExtType1 ext f)) => Functor (GrinExpr ext f)
-deriving instance (Foldable (GrinSimpleExprExtType1 ext f)) => Foldable (GrinExpr ext f)
-deriving instance (Traversable (GrinSimpleExprExtType1 ext f)) => Traversable (GrinExpr ext f)
-deriving instance forall k (ext :: k) (f :: * -> *) a .  (ValueConstraint f a, Data (f a), Data (f GrinIdentifier), Typeable ext, Data (GrinSimpleExprExtType1 ext f a), Typeable k)  => Data (GrinExpr ext f a)
+deriving instance (Functor (SExprExt ext f)) => Functor (GrinExpr ext f)
+deriving instance (Foldable  (SExprExt ext f)) => Foldable (GrinExpr ext f)
+deriving instance (Traversable (SExprExt ext f)) => Traversable (GrinExpr ext f)
+deriving instance forall k (ext :: k) (f :: * -> *) a .  (ValueConstraint f a, Data (f a), Data (f GrinIdentifier), Typeable ext, Data (SExprExt ext f a), Typeable k)  => Data (GrinExpr ext f a)
 
 
 instance Traversable f => Applicative (GrinExpr ext f) where
@@ -82,8 +83,6 @@ instance Traversable f => Monad (GrinExpr ext f) where
   
 
 
-
-type instance GrinSimpleExprExtType1 HighLevelGrin f  = HighLevelSimpleExpression HighLevelGrin f
 
   
 type LPat = GrinLambdaPattern

@@ -38,25 +38,44 @@ import Data.Functor.Identity
 import qualified Unsafe.Coerce
 import Data.Maybe (fromJust)
 import GHC.TypeLits hiding (type (*))
+import Data.Functor.Compose
+import Numeric.Natural
 type VariableName = GrinIdentifier
 type FunctionName = GrinIdentifier
 
+type FieldOffset = Natural
+
+data StackOrHeap = Stack | Heap deriving (Data, Show, Eq)
 
 
+{-type Val a = GrinValue [] a
+
+data GrinSimpleExpression a where
+  Unit :: Val a -> GrinSimpleExpression a
+  Update :: VariableName -> Val a -> GrinSimpleExpression a
+  Call :: FunctionName -> [GrinIdentifier] -> GrinSimpleExpression a
+  -- High level
+  Store :: Val a -> GrinSimpleExpression a
+  Eval :: VariableName -> GrinSimpleExpression a
+  Apply :: VariableName -> [Val a] -> GrinSimpleExpression a
+  FetchNode :: VariableName -> GrinSimpleExpression a
+  -- Low level
+  Alloc :: Natural -> Maybe StackOrHeap -> GrinSimpleExpression a
+  Free :: Pointer a -> GrinSimpleExpression a
+  FetchUpdate :: {source :: VariableName, target :: VariableName} -> GrinSimpleExpression a
+  FetchField :: VariableName -> FieldOffset -> Maybe Tag -> GrinSimpleExpression a
+  
+  deriving (Eq, Show, Data, Typeable, Generic, Functor, Foldable, Traversable)
 
 
+instance Applicative (GrinSimpleExpression) where
+  pure a = Unit (Variable a Nothing)
+  Unit (Variable f n) <*> a = f <$> a
 
 
+-}
 
-
-
-
-
-
-
-
-
-
+  
 
 data GrinSimpleExprX (ext :: k) (f :: * -> *) a where
   UnitX :: Traversable f => {value :: GrinValue f a } -> GrinSimpleExprX ext f a -- ^ Returns 'value'.
@@ -65,7 +84,7 @@ data GrinSimpleExprX (ext :: k) (f :: * -> *) a where
   GrinSimpleExprExt ::  SExprExt ext f a -> GrinSimpleExprX ext f a
 {-  FFI :: {name :: Name, callingConvention :: CallConvention, impEnt :: ForeignEnt,
        ffiAnnot :: FFIAnnotation, args :: Arguments} -> SExpr-}
-  deriving Typeable
+  deriving (Typeable)
 
 
 type ExtConstraint f = (Traversable f, Monad f)
@@ -74,7 +93,15 @@ deriving instance forall ext f . Functor (SExprExt ext f) => Functor (GrinSimple
 deriving instance forall ext f . Foldable (SExprExt ext f) => Foldable (GrinSimpleExprX ext f)
 deriving instance forall ext f . Traversable (SExprExt ext f) => Traversable (GrinSimpleExprX ext f)
 
-instance (Applicative (SExprExt ext f), Traversable f) => Applicative (GrinSimpleExprX ext f) where
+instance forall ext f a. (Show a, Show (f (GrinValue f a)), Show (f GrinIdentifier), Show (SExprExt ext f a)) => Show (GrinSimpleExprX ext f a) where
+  show (UnitX v) = "unit " ++ show v
+  show (UpdateX name value) = "update " ++ show name ++ " <- " ++ show value
+  show (CallX name args) = "call " ++ show name ++ " with " ++ show args
+  show (GrinSimpleExprExt s) = show s
+  
+
+
+instance (Functor (SExprExt ext f), Traversable f) => Applicative (GrinSimpleExprX ext f) where
   pure a = UnitX (Variable a Nothing)
   UnitX (Variable f n) <*> a = (f <$> a)
 
@@ -89,29 +116,15 @@ type family MapList (l :: [ * -> * ]) (f :: * -> *)  = (r :: [* -> *] ) | r -> l
   MapList (ext ': rest) f = (SExprExt ext f) ': (MapList rest f)
 
 
-type family MapConstraint constr (l :: [ * -> *]) (f :: * -> *) = (r :: Constraint) where -- | r -> l where-- 
-  MapConstraint constr '[] f = ()
-  MapConstraint constr (ext ': rest) f = (constr (SExprExt ext f), MapConstraint constr rest f)
+
+
+
 
 
 instance (Length exts > 0) =>SimpleExprExtension (exts :: [* -> *]) f a where
-  type SExprExt (exts) f = Union (Traversable :&&: Monad) (MapList exts f)
+  type SExprExt (exts) f =  ( Union (Traversable ) (MapList exts f))
 
                                                               
-type family ConstrainedMembers constr (l :: [ * -> *]) = (r :: Constraint) | r -> l where
- ConstrainedMembers constr '[] = ()
- ConstrainedMembers constr (t ': c) = (constr t, ConstrainedMembers constr c)
-
-type family ConstrainedMembers0 constr (l :: [* -> *]) = (r :: Constraint) | r -> l where
- ConstrainedMembers0 constr '[] = ()
- ConstrainedMembers0 constr (t ': c) = (ForallF constr t, ConstrainedMembers0 constr c)
-
-
-
-type family Is t (r :: [* -> *]) where
-  Is h (h ': tail) = 0
-  Is h (h' ': tail) = 1 + Is h tail
-
 type family Length (l :: [* -> *]) = (r :: Nat) where
   Length '[] = 0
   Length (h ': tail) = 1 + Length tail
@@ -125,5 +138,4 @@ type family ConstrAt constr r n = (res :: Constraint) where
   ConstrAt constr (h ': tail) 0 = constr h
   ConstrAt constr (h ': tail) n = ConstrAt constr tail (n-1)
 
-type ConstrainThe h constr r  = ConstrAt constr r (Is h r)
 

@@ -34,7 +34,8 @@ data HighLevelSimpleExpression ext f a where
     Store :: {value :: Val f a} -> HighLevelSimpleExpression ext f a -- ^ Equivalent to an 'Alloc' followed by an 'UpdateUnit'.
     Eval :: {name :: Name} -> HighLevelSimpleExpression ext f a -- ^ When we inline Eval, we can create a giant literal 'eval' method, but a better way is to generate specialised 'eval' methods for each use of 'Eval'.
     Apply :: Traversable f => {name :: Name, args :: f (Val f a)} -> HighLevelSimpleExpression ext f a -- ^ Returns either a partial application node or a closure. Either way, very simple to inline.
-    FetchNodeX :: {name :: Name} -> HighLevelSimpleExpression ext f a -- ^ Fetches the node at 'name'. Equivalent to many FetchField's followed by a Unit to create the node.
+    FetchNode :: {name :: Name} -> HighLevelSimpleExpression ext f a -- ^ Fetches the node at 'name'. Equivalent to many FetchField's followed by a Unit to create the node.
+    
     deriving (Typeable)
 
 data HighLevelGrin
